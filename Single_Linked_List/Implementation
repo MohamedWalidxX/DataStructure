@@ -1,0 +1,236 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+
+struct Node {
+    Node(int d) :
+        data(d), next(nullptr){}
+
+    int data,id;
+    Node *next, *innerNode = nullptr;
+};
+class LinkedList {
+private:
+    Node *head{}, *oddHead{}, *evenHead{}, *externalNode;
+    int size = 0;
+    Node *helpReverse(Node *h) {
+        // let next child point to me and then return
+        if (h && h->next) {
+            Node *modified = helpReverse(h->next);
+            modified->next = h;
+            h->next = nullptr;
+        } else
+            head = h;
+        return h;
+    }
+    Node *reverseK(Node *h){
+        if (h && h->next && h->id != lastElemntId){
+            Node *modified = reverseK(h->next);
+            modified->next = h;
+            h->next = nullptr;
+        }
+        if (h->id % kk == 0)
+            head = h;
+        return h;
+    }
+
+public:
+    void setHead(Node *head) {
+        LinkedList::head = head;
+    }
+
+    void setOddHead(Node *oddHead) {
+        LinkedList::oddHead = oddHead;
+    }
+
+    void setEvenHead(Node *evenHead) {
+        LinkedList::evenHead = evenHead;
+    }
+
+    void setExternalNode(Node *externalNode) {
+        LinkedList::externalNode = externalNode;
+    }
+
+    void setSize(int size) {
+        LinkedList::size = size;
+    }
+
+public:
+    void print() {
+        Node *tmp = head;
+        while (tmp) {
+            cout << tmp->data << " ";
+            tmp = tmp->next;
+        }
+        cout << "\n";
+    }
+
+    Node *getHead() const {
+        return head;
+    }
+
+    Node *getTail(Node *head) {
+        Node *tmp = head;
+        while (tmp && tmp->next)
+            tmp = tmp->next;
+        return tmp;
+    }
+
+    Node *getBeforeTail(Node *head) {
+        Node *tmp = head;
+        while (tmp && tmp->next && tmp->next->next)
+            tmp = tmp->next;
+        return tmp;
+    }
+
+    void add(int value, Node* innerNodeValue = nullptr) {
+        Node *newNode = new Node(value), *tmpTail = getTail(head);
+        newNode->innerNode = innerNodeValue;
+        if (head)
+            tmpTail->next = newNode;
+        else
+            head = newNode;
+        newNode->id = ++size;
+    }
+
+    void insertFront(int value) {
+        Node *newHead = new Node(value);
+        newHead->next = head;
+        head = newHead;
+    }
+
+    void deleteFront() {
+        if (head) {
+            Node *newHead = head->next;
+            delete head;
+            head = newHead;
+        }
+    }
+
+    void reverse() {
+        helpReverse(head);
+    }
+    LinkedList nodesWithSpecificId(){
+        auto tmp = head;
+        LinkedList ret{};
+        while (tmp && tmp->id <= lastElemntId){
+            if (tmp->next && tmp->next->id > lastElemntId)
+                externalNode = tmp->next;
+            if (tmp->id % kk == 0)
+                ret.add(-1, tmp);
+            tmp = tmp->next;
+        }
+        if (ret.head)
+            ret.head = ret.head->next;
+        return ret;
+    }
+    void reverseSegment(){
+        LinkedList nodeAddress = nodesWithSpecificId();
+        reverseK(head);
+        Node* tmp = head;
+        tmp = tmp->next;
+        while (tmp){
+            while (tmp->next && tmp->next->id % kk)
+                tmp = tmp->next;
+            if (!tmp->next || tmp->next->id % kk == 0){
+                if (nodeAddress.head)
+                    tmp->next = nodeAddress.head->innerNode;
+                else{
+                    tmp->next = nullptr;
+                    break;
+                }
+            }
+            tmp = tmp->next;
+            nodeAddress.head = nodeAddress.head->next;
+        }
+        Node* tail = getTail(head);
+        tail->next = externalNode;
+    }
+    void swapHeadTail() {
+        if (head && head->next && head->next->next) {
+            Node *beforeTail = getBeforeTail(head), *tail = beforeTail->next;
+            tail->next = head->next;
+            head->next = nullptr;
+            beforeTail->next = head;
+            head = tail;
+        } else if (head && head->next) {
+            Node *tail = getTail(head);
+            tail->next = head;
+            head->next = nullptr;
+            head = tail;
+        }
+    }
+    void shiftLeft(int shamt){
+        if (shamt && shamt < size){
+            shamt--;
+            auto tmp = head;
+            while (shamt-- && tmp)
+                tmp = tmp->next;
+            Node* tail = getTail(head), *newHead = tmp->next;
+            tmp->next = nullptr;
+            tail->next = head, head = newHead;
+        }
+    }
+    int max(Node* tmp = nullptr, bool first = true) {
+        if (first)
+            tmp = head, first = !first;
+        if (!tmp)
+            return -INT_MAX;
+        int mx = tmp->data;
+        return std::max(mx, max(tmp->next, first));
+    }
+    void rearrangeOddThenEven(){
+        if (size < 3)
+            return;
+        int cnt = 0;
+        Node* tmp = head;
+        while (tmp->next && ++cnt){
+            if (cnt == 1)
+                oddHead = tmp;
+            else if (cnt == 2)
+                evenHead = tmp;
+            Node* nxt = tmp->next;
+            tmp->next = tmp->next->next;
+            tmp = nxt;
+        }
+        Node* oddTail = getTail(oddHead);
+        oddTail->next = evenHead;
+    }
+    int length(){
+        int cnt = 0;
+        auto tmp = head;
+        while (tmp)
+            cnt++,tmp = tmp->next;
+        return cnt;
+    }
+    ~LinkedList() {
+        Node *nxt = head;
+        while (head) {
+            nxt = nxt->next;
+            delete head;
+            head = nxt;
+        }
+    }
+
+};
+
+class Solution {
+public:
+    Node* reverseKGroup(Node* head, int k) {
+        if (k == 1)
+            return head;
+        kk = k;
+        LinkedList l{};
+        l.setHead(head);
+        lastElemntId = (l.length() / kk) * kk;
+        l.print();
+        l.reverseSegment();
+        l.print();
+        return l.getHead();
+    }
+};
+
+int main() {
+    LinkedList l{};
+    return 0;
+}
